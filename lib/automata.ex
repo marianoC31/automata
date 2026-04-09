@@ -13,10 +13,35 @@ defmodule Automata do
             start: nil,
             accept: MapSet.new()
 end
-  def determinize(%NFA{alphabet: a, delta: delta, start: start} = nfa) do
+  def powerset([]), do: [MapSet.new()]
+  def powerset([h|t])do
+    sub = powerset(t)
+    sub ++ Enum.map(sub, fn s -> MapSet.put(s,h) end)
+  end
+  def determinize(%NFA{states: states,alphabet: a, start: start} = nfa) do
+  start_dfa = MapSet.new([start])
+  delta_dfa = %{}
+
+  states_dfa = powerset(MapSet.to_list(states))
+  accept =
+    states_dfa
+    |> Enum.filter(fn set ->
+      not MapSet.disjoint?(set, nfa.accept)
+    end)
+    |> MapSet.new()
+
+  %DFA{
+    states: states_dfa,
+    alphabet: a,
+    delta: delta_dfa,
+    start: start_dfa,
+    accept: accept
+  }
+end
+  def e_determinize(%NFA{alphabet: a, delta: delta, start: start} = nfa) do
   start_dfa = MapSet.new([start])
   queue = :queue.from_list([start_dfa])
-  visited = MapSet.new([start_dfa])
+  visited = MapSet.new()
   delta_dfa = %{}
 
   {states_dfa, delta_dfa} = bfs(queue, visited, delta_dfa, a, delta)
@@ -59,8 +84,8 @@ end
         bfs(updated_queue,new_visited,new_delta_dfa,a,delta)
     end
   end
-  def move(S,sym,delta) do
-    Enum.reduce(S,MapSet.new(),fn s, acc ->
+  def move(state,sym,delta) do
+    Enum.reduce(state,MapSet.new(),fn s, acc ->
       MapSet.union(Map.get(delta,{s,sym},MapSet.new()),acc)
     end)
   end

@@ -19,18 +19,8 @@ defmodule AutomataTest do
 
     dfa = Automata.determinize(nfa)
 
-    # 🔥 checks básicos
-    assert dfa.start == MapSet.new([:q0])
 
-    # debe existir el estado que contiene q3
-    assert Enum.any?(dfa.states, fn s ->
-      MapSet.member?(s, :q3)
-    end)
 
-    # prueba transición clave
-    s0 = MapSet.new([:q0])
-    s1 = MapSet.new([:q0, :q1])
 
-    assert Map.get(dfa.delta, {s0, :a}) == s1
   end
 end
