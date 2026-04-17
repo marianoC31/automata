@@ -20,7 +20,6 @@ end
   end
   def determinize(%NFA{states: states,alphabet: a, start: start} = nfa) do
   start_dfa = MapSet.new([start])
-  delta_dfa = %{}
 
   states_dfa = powerset(MapSet.to_list(states))
   accept =
@@ -30,6 +29,11 @@ end
     end)
     |> MapSet.new()
 
+  delta_dfa = Enum.reduce(states_dfa,%{}, fn state, acc ->
+    Enum.reduce(a,acc,fn symbol, acc2 ->
+     Map.put(acc2,{state,symbol},move(nfa,state,symbol))
+    end)
+  end)
   %DFA{
     states: states_dfa,
     alphabet: a,
@@ -38,6 +42,14 @@ end
     accept: accept
   }
 end
+def move(nfa,state,symbol) do
+    state
+    |>
+    Enum.flat_map(fn s->
+      Map.get(nfa.delta,{s,symbol},MapSet.new())
+    end)
+    |> MapSet.new()
+  end
   def e_determinize(%NFA{alphabet: a, delta: delta, start: start} = nfa) do
   start_dfa = MapSet.new([start])
   queue = :queue.from_list([start_dfa])
@@ -84,10 +96,6 @@ end
         bfs(updated_queue,new_visited,new_delta_dfa,a,delta)
     end
   end
-  def move(state,sym,delta) do
-    Enum.reduce(state,MapSet.new(),fn s, acc ->
-      MapSet.union(Map.get(delta,{s,sym},MapSet.new()),acc)
-    end)
-  end
+
 
 end
