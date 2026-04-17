@@ -78,4 +78,20 @@ defmodule AutomataTest do
       assert Map.has_key?(dfa.delta, {state, symbol})
     end
   end
+  test "e_closure con ciclos y múltiples ramas" do
+    nfa = %{
+      states: MapSet.new([:q0, :q1, :q2, :q3]),
+      delta: %{
+        {:q0, :epsilon} => MapSet.new([:q1, :q2]),
+        {:q1, :epsilon} => MapSet.new([:q2]),
+        {:q2, :epsilon} => MapSet.new([:q0, :q3]),
+        {:q3, :epsilon} => MapSet.new([])
+      }
+    }
+
+    result =
+      Automata.e_closure(nfa, MapSet.new([:q0]))
+
+    assert result == MapSet.new([:q0, :q1, :q2, :q3])
+  end
 end

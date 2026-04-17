@@ -50,6 +50,19 @@ def move(nfa,state,symbol) do
     end)
     |> MapSet.new()
   end
+def e_closure(nfa,state) do
+    dfs(nfa,MapSet.new(),MapSet.to_list(state))
+end
+def dfs(_nfa,visited,[]), do: visited
+def dfs(nfa,visited, [h|t]) do
+  if !MapSet.member?(visited,h) do
+    new_visited = MapSet.put(visited,h)
+    new_states = Map.get(nfa.delta,{h,:epsilon},MapSet.new())
+    dfs(nfa,new_visited,Enum.sort(MapSet.to_list(new_states)++t))
+  else
+    dfs(nfa,visited,t)
+  end
+end
   def e_determinize(%NFA{alphabet: a, delta: delta, start: start} = nfa) do
   start_dfa = MapSet.new([start])
   queue = :queue.from_list([start_dfa])
