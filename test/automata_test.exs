@@ -17,7 +17,7 @@ defmodule AutomataTest do
       }
     }
 
-    dfa = Automata.determinize(nfa)
+    assert dfa = Automata.determinize(nfa)
   end
 
 
@@ -37,13 +37,10 @@ defmodule AutomataTest do
 
     dfa = Automata.determinize(nfa)
 
-    # 1. estados = powerset completo (16)
     assert length(dfa.states) == 16
 
-    # 2. estado inicial
     assert dfa.start == MapSet.new([:q0])
 
-    # 3. estados de aceptación
     expected_accept =
       dfa.states
       |> Enum.filter(fn set ->
@@ -53,13 +50,11 @@ defmodule AutomataTest do
 
     assert dfa.accept == expected_accept
 
-    # 4. transición importante: el vacío
     empty = MapSet.new()
 
     assert dfa.delta[{empty, :a}] == empty
     assert dfa.delta[{empty, :b}] == empty
 
-    # 5. algunas transiciones clave (sanity checks)
 
     s0 = MapSet.new([:q0])
     s1 = MapSet.new([:q0, :q1])
@@ -72,7 +67,6 @@ defmodule AutomataTest do
     assert dfa.delta[{s1, :b}] == s2
     assert dfa.delta[{s2, :b}] == s3
 
-    # 6. todas las transiciones deben existir
     for state <- dfa.states,
         symbol <- nfa.alphabet do
       assert Map.has_key?(dfa.delta, {state, symbol})
@@ -94,4 +88,33 @@ defmodule AutomataTest do
 
     assert result == MapSet.new([:q0, :q1, :q2, :q3])
   end
+  test "e_determinize simple ε-NFA" do
+    nfa = %NFA{
+    states: MapSet.new([:q0, :q1, :q2]),
+    alphabet: [:a, :b],
+    start: :q0,
+    accept: MapSet.new([:q2]),
+    delta: %{
+      {:q0, :epsilon} => MapSet.new([:q1]),
+      {:q1, :a} => MapSet.new([:q1]),
+      {:q1, :b} => MapSet.new([:q2])
+    }
+  }
+  dfa = Automata.e_determinize(nfa)
+
+  s0 = MapSet.new([:q0, :q1])
+  s1 = MapSet.new([:q1])
+  s2 = MapSet.new([:q2])
+
+  assert MapSet.member?(dfa.states, s0)
+  assert MapSet.member?(dfa.states, s1)
+  assert MapSet.member?(dfa.states, s2)
+
+  assert dfa.delta[{s0, :a}] == s1
+  assert dfa.delta[{s0, :b}] == s2
+  assert dfa.delta[{s1, :a}] == s1
+  assert dfa.delta[{s1, :b}] == s2
+
+  assert MapSet.member?(dfa.accept, s2)
+end
 end

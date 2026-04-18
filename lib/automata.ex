@@ -63,14 +63,11 @@ def dfs(nfa,visited, [h|t]) do
     dfs(nfa,visited,t)
   end
 end
-  def e_determinize(%NFA{alphabet: a, delta: delta, start: start} = nfa) do
-  start_dfa = MapSet.new([start])
-  queue = :queue.from_list([start_dfa])
-  visited = MapSet.new()
-  delta_dfa = %{}
-
-  {states_dfa, delta_dfa} = bfs(queue, visited, delta_dfa, a, delta)
-
+  def e_determinize(%NFA{alphabet: a, start: start} = nfa) do
+  start_dfa = e_closure(nfa,MapSet.new([start]))
+  IO.inspect([start_dfa], label: "lista inicial")
+  IO.inspect(start_dfa, label: "start_dfa")
+  {states_dfa, delta_dfa} = prune(nfa,MapSet.new(),%{},[start_dfa])
   accept =
     states_dfa
     |> Enum.filter(fn set ->
@@ -86,29 +83,41 @@ end
     accept: accept
   }
 end
-  def bfs(queue,visited, delta_dfa,a,delta) do
-    case :queue.out(queue) do
-      {:empty,_} ->
-        {visited, delta_dfa}
-      {{:value,state},new_queue} ->
-        {new_delta_dfa,new_visited,updated_queue} = Enum.reduce(a,{delta_dfa,visited,new_queue},fn sym, {delta_acc,visited_acc,queue_acc} ->
-          T = move(state,sym,delta)
-          delta_acc = Map.put(delta_acc,{state,sym},T)
-
-          if(MapSet.member?(visited_acc, T)) do
-            {delta_acc,visited_acc,queue_acc}
-          else
-            {
-            delta_acc,
-            MapSet.put(visited_acc,T),
-            :queue.in(T,queue_acc)
-            }
-          end
-          end)
-
-        bfs(updated_queue,new_visited,new_delta_dfa,a,delta)
+def prune(_nfa,states_dfa,delta_dfa,[]), do: {states_dfa,delta_dfa}
+def prune(%NFA{alphabet: a, delta: delta} = nfa,states_dfa,delta_dfa,[h|t]) do
+  IO.inspect(binding(), label: "binding en prune")
+  r = h
+  new_states_dfa = MapSet.put(states_dfa,r)
+  IO.inspect(a, label: "alfabeto a")
+  IO.inspect(is_list(a), label: "es lista?")
+  {new_states,new_delta_dfa} = Enum.reduce(a,{MapSet.new(),delta_dfa},fn sym,{acc_states,acc_delta} ->
+    move_result =
+      r
+      |>
+      Enum.flat_map(fn state->
+        Map.get(delta,{state,sym},MapSet.new())
+      end)
+      |> MapSet.new()
+    new_s = e_closure(nfa,move_result)
+    if(MapSet.size(new_s)!=0) do
+      new_acc_delta = Map.put(acc_delta,{r,sym},new_s)
+      new_acc_states=
+        if !MapSet.member?(MapSet.union(new_states_dfa, acc_states),new_s)do
+          MapSet.put(acc_states,new_s)
+        else
+          acc_states
+        end
+      {new_acc_states,new_acc_delta}
+    else
+      {acc_states,acc_delta}
     end
-  end
 
+  end)
 
+  IO.inspect(MapSet.union(new_states_dfa, new_states), label: "arg2 states_dfa")
+  IO.inspect(new_delta_dfa, label: "arg3 delta_dfa")
+  IO.inspect(MapSet.to_list(new_states) ++ t, label: "arg4 cola")
+  prune(nfa,MapSet.union(new_states_dfa, new_states),new_delta_dfa,MapSet.to_list(new_states) ++ t)
+
+end
 end
