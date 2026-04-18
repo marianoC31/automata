@@ -85,11 +85,8 @@ end
 end
 def prune(_nfa,states_dfa,delta_dfa,[]), do: {states_dfa,delta_dfa}
 def prune(%NFA{alphabet: a, delta: delta} = nfa,states_dfa,delta_dfa,[h|t]) do
-  IO.inspect(binding(), label: "binding en prune")
   r = h
   new_states_dfa = MapSet.put(states_dfa,r)
-  IO.inspect(a, label: "alfabeto a")
-  IO.inspect(is_list(a), label: "es lista?")
   {new_states,new_delta_dfa} = Enum.reduce(a,{MapSet.new(),delta_dfa},fn sym,{acc_states,acc_delta} ->
     move_result =
       r
@@ -114,9 +111,6 @@ def prune(%NFA{alphabet: a, delta: delta} = nfa,states_dfa,delta_dfa,[h|t]) do
 
   end)
 
-  IO.inspect(MapSet.union(new_states_dfa, new_states), label: "arg2 states_dfa")
-  IO.inspect(new_delta_dfa, label: "arg3 delta_dfa")
-  IO.inspect(MapSet.to_list(new_states) ++ t, label: "arg4 cola")
   prune(nfa,MapSet.union(new_states_dfa, new_states),new_delta_dfa,MapSet.to_list(new_states) ++ t)
 
 end
